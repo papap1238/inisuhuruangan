@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Suhu dan Kelembaban - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            text-align: center;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 24px;
+            color: white;
+        }
+
+        .card-icon.humidity {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .card-unit {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .time-filter {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: transparent;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .chart-wrapper {
+            height: 400px;
+            position: relative;
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            font-weight: 600;
+            color: #555;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .time-filter {
+                flex-wrap: wrap;
+            }
+            
+            .chart-wrapper {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌡️ Monitoring Suhu & Kelembaban</h1>
+            <p>Dashboard Real-time untuk Kontrol Lingkungan Ruangan</p>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-indicator status-online"></span>
+            <span id="statusText">Terhubung - Terakhir update: <span id="lastUpdate">Memuat...</span></span>
+        </div>
+
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🌡️</div>
+                    <div class="card-title">Suhu Ruangan</div>
+                </div>
+                <div class="card-value" id="currentTemp">--</div>
+                <div class="card-unit">°C</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon humidity">💧</div>
+                    <div class="card-title">Kelembaban</div>
+                </div>
+                <div class="card-value" id="currentHumidity">--</div>
+                <div class="card-unit">%</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">📊 Grafik Monitoring</div>
+                <div class="time-filter">
+                    <button class="filter-btn active" data-period="1h">1 Jam</button>
+                    <button class="filter-btn" data-period="6h">6 Jam</button>
+                    <button class="filter-btn" data-period="24h">24 Jam</button>
+                    <button class="filter-btn" data-period="7d">7 Hari</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="temperatureChart"></canvas>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">📋 Data Terbaru</div>
+                <button class="refresh-btn" onclick="fetchAllData()">🔄 Refresh</button>
+            </div>
+            <div id="tableContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Memuat data...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const SUPABASE_URL = "https://upjzvpdeegonoducgogf.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ZORbu_1pVADTkmRyncKcAg_6SgFxy2c"; // Using your original anon key
+        const TABLE_NAME = "tabelayam2";
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let temperatureChart;
+        let allData = [];
+        let currentPeriod = '24h';
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('temperatureChart').getContext('2d');
+            temperatureChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Suhu (°C)',
+                        data: [],
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Kelembaban (%)',
+                        data: [],
+                        borderColor: '#4ecdc4',
+                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Waktu'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Suhu (°C)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Kelembaban (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch latest data for cards
+        async function fetchLatestData() {
+            try {
+                // Try different approaches for data fetching
+                let { data, error } = await supabase
+                    .from(TABLE_NAME)
+                    .select("suhu, kelembaban, created_at")
+                    .order("id", { ascending: false })
+                    .limit(1);
+
+                // If error 401, try with different approach
+                if (error && error.code === 'PGRST301') {
+                    console.log("Trying alternative fetch method...");
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=suhu,kelembaban,created_at&order=id.desc&limit=1`, {
+                        method: 'GET',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        data = await response.json();
+                        error = null;
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                }
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    document.getElementById("currentTemp").textContent = data[0].suhu || '--';
+                    document.getElementById("currentHumidity").textContent = data[0].kelembaban || '--';
+                    
+                    const lastUpdate = new Date(data[0].created_at).toLocaleString('id-ID');
+                    document.getElementById("lastUpdate").textContent = lastUpdate;
+                    
+                    updateStatus(true);
+                } else {
+                    document.getElementById("currentTemp").textContent = '--';
+                    document.getElementById("currentHumidity").textContent = '--';
+                    document.getElementById("lastUpdate").textContent = 'Tidak ada data';
+                    updateStatus(false);
+                }
+            } catch (error) {
+                console.error("Error fetching latest data:", error);
+                document.getElementById("currentTemp").textContent = 'Error';
+                document.getElementById("currentHumidity").textContent = 'Error';
+                document.getElementById("lastUpdate").textContent = 'Gagal memuat';
+                updateStatus(false, error.message);
+            }
+        }
+
+        // Fetch all data for chart and table
+        async function fetchAllData() {
+            try {
+                let { data, error } = await supabase
+                    .from(TABLE_NAME)
+                    .select("*")
+                    .order("created_at", { ascending: false })
+                    .limit(1000);
+
+                // If error 401, try with different approach
+                if (error && (error.code === 'PGRST301' || error.message.includes('401'))) {
+                    console.log("Trying alternative fetch method for all data...");
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*&order=created_at.desc&limit=1000`, {
+                        method: 'GET',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        data = await response.json();
+                        error = null;
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                }
+
+                if (error) throw error;
+
+                allData = data || [];
+                updateChart();
+                updateTable();
+                
+            } catch (error) {
+                console.error("Error fetching all data:", error);
+                document.getElementById("tableContainer").innerHTML = 
+                    `<div style="text-align: center; color: #f44336; padding: 20px;">
+                        ❌ Gagal memuat data<br>
+                        <small>Error: ${error.message}</small><br>
+                        <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Refresh Halaman
+                        </button>
+                    </div>`;
+                updateStatus(false, error.message);
+            }
+        }
+
+        // Update chart based on selected period
+        function updateChart() {
+            let filteredData = filterDataByPeriod(allData, currentPeriod);
+            
+            const labels = filteredData.map(item => {
+                const date = new Date(item.created_at);
+                if (currentPeriod === '1h' || currentPeriod === '6h') {
+                    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                } else if (currentPeriod === '24h') {
+                    return date.toLocaleString('id-ID', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                } else {
+                    return date.toLocaleDateString('id-ID', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                }
+            }).reverse();
+            
+            const temperatures = filteredData.map(item => parseFloat(item.suhu) || 0).reverse();
+            const humidities = filteredData.map(item => parseFloat(item.kelembaban) || 0).reverse();
+
+            temperatureChart.data.labels = labels;
+            temperatureChart.data.datasets[0].data = temperatures;
+            temperatureChart.data.datasets[1].data = humidities;
+            temperatureChart.update();
+        }
+
+        // Filter data by time period
+        function filterDataByPeriod(data, period) {
+            const now = new Date();
+            let cutoffTime;
+
+            switch (period) {
+                case '1h':
+                    cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
+                    break;
+                case '6h':
+                    cutoffTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                    break;
+                case '24h':
+                    cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    break;
+                case '7d':
+                    cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                default:
+                    return data.slice(0, 50);
+            }
+
+            return data.filter(item => new Date(item.created_at) >= cutoffTime);
+        }
+
+        // Update table
+        function updateTable() {
+            const tableData = allData.slice(0, 50); // Show latest 50 records
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Waktu</th>
+                            <th>Suhu (°C)</th>
+                            <th>Kelembaban (%)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            tableData.forEach((item, index) => {
+                const date = new Date(item.created_at);
+                const formattedDate = date.toLocaleString('id-ID');
+                const temp = parseFloat(item.suhu) || 0;
+                const humidity = parseFloat(item.kelembaban) || 0;
+                
+                let tempStatus = '🟢 Normal';
+                if (temp > 35 || temp < 15) tempStatus = '🔴 Warning';
+                else if (temp > 30 || temp < 20) tempStatus = '🟡 Caution';
+
+                tableHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${formattedDate}</td>
+                        <td>${temp.toFixed(1)}</td>
+                        <td>${humidity.toFixed(1)}</td>
+                        <td>${tempStatus}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById("tableContainer").innerHTML = tableHTML;
+        }
+
+        // Update connection status
+        function updateStatus(isOnline, errorMessage = '') {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('statusText');
+            
+            if (isOnline) {
+                statusIndicator.className = 'status-indicator status-online';
+                const now = new Date().toLocaleString('id-ID');
+                statusText.innerHTML = `Terhubung - Terakhir update: <span id="lastUpdate">${now}</span>`;
+            } else {
+                statusIndicator.className = 'status-indicator status-offline';
+                if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+                    statusText.innerHTML = `❌ Error Autentikasi - Periksa konfigurasi RLS di Supabase`;
+                } else if (errorMessage) {
+                    statusText.innerHTML = `❌ Error: ${errorMessage}`;
+                } else {
+                    statusText.innerHTML = `❌ Tidak terhubung - Error koneksi database`;
+                }
+            }
+        }
+
+        // Event listeners for filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentPeriod = btn.dataset.period;
+                updateChart();
+            });
+        });
+
+        // Make fetchAllData available globally
+        window.fetchAllData = fetchAllData;
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            fetchLatestData();
+            fetchAllData();
+            
+            // Auto refresh every 5 seconds
+            setInterval(fetchLatestData, 5000);
+            // Refresh all data every 30 seconds
+            setInterval(fetchAllData, 30000);
+        });
+    </script>
+</body>
+</html>
